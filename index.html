@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Battlecards Against Reality</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <img src="https://www.svgrepo.com/show/490958/cards.svg" alt="line art cards" style="position: fixed; top: 20px; right: 20px; width: 100px; opacity: 0.1;" />
+  <h1>Battlecards Against Reality</h1>
+
+  <div id="startScreen">
+    <button id="hostBtn">Start Game</button>
+    <button id="joinBtn">Join Game</button>
+    <button id="rejoinBtn">Rejoin Game</button>
+  </div>
+
+  <div id="hostForm" class="hidden">
+    <h2>Host Game</h2>
+    <input type="text" id="hostName" placeholder="Your name" />
+    <input type="number" id="playerCount" placeholder="Total players" min="2" />
+    <input type="text" id="roomPassword" placeholder="Room password" />
+    <button id="createRoomBtn">Create Room</button>
+  </div>
+
+  <div id="joinForm" class="hidden">
+    <h2>Join Game</h2>
+    <input type="text" id="playerName" placeholder="Your name" />
+    <input type="text" id="roomCode" placeholder="Room code" />
+    <input type="text" id="joinPassword" placeholder="Room password" />
+    <button id="joinRoomBtn">Join Room</button>
+  </div>
+
+  <div id="waitingRoom" class="hidden">
+    <h2>Waiting Room</h2>
+    <p id="waitingRoomStatus"></p>
+    <ul id="playerList"></ul>
+    <button id="startGameBtn" class="hidden">Start Game</button>
+  </div>
+
+  <div id="gameScreen" class="hidden">
+    <h2 id="blackCard"></h2>
+    <div id="whiteCardsContainer"></div>
+    <div id="submissions"></div>
+    <button id="startRoundBtn" class="hidden">Start Round</button>
+    <button id="stopGameBtn" class="hidden">Stop Game</button>
+    <p id="status"></p>
+    <button id="retryJoinBtn" class="hidden">Retry Join</button>
+  </div>
+
+  <div id="scoreboard" class="hidden">
+    <h3>Scoreboard</h3>
+    <ul id="scoreList"></ul>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <footer>
+    <div style="max-width: 600px; margin: 40px auto 0; font-size: 12px; opacity: 0.6;">
+      <p>
+        This is a fan-made game inspired by <em>Cards Against Humanity</em>. All rights to the original game format belong to Cards Against Humanity LLC. This version was built for educational and personal portfolio purposes only.
+      </p>
+    </div>
+  </footer>
+
+</body>
+</html>
