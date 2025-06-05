@@ -100,6 +100,9 @@ function startNewRound(code) {
   io.to(code).emit('statusMessage', `🧑‍⚖️ New round started. Judge is ${nextJudge.name}`);
 }
 
+io.on('connection', (socket) => {
+  console.log(`User connected: ${socket.id}`);
+
   socket.on('createRoom', ({ name, count, password }) => {
     const roomCode = generateRoomCode();
     rooms[roomCode] = {
@@ -282,8 +285,8 @@ function startNewRound(code) {
     if (!room || socket.id !== room.host) return;
     io.to(roomCode).emit('gameOver', { winner: '⚠️ Game ended early by host' });
   });
-});
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-});
+  });
+})
