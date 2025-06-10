@@ -123,4 +123,21 @@ ul {
   color: #fff;
 }
 
+footer {
+  text-align: center;
+  padding: 1em;
+  font-size: 0.9em;
+  background-color: black; /* assuming this is already set */
+  color: white;
+}
+footer a {
+  color: #ffffff; /* or white, yellow, etc. */
+  text-decoration: underline;
+}
+footer a:hover {
+  text-decoration: underline;
+  color: #ffff00;
+}
+
+
 

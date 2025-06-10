@@ -1,4 +1,4 @@
-// Revised implementation to restore stable rejoining behavior for non-judge players
+// server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
@@ -14,9 +14,18 @@ app.use(express.static(__dirname + '/'));
 const cards = JSON.parse(fs.readFileSync('./cards.json'));
 const rooms = {};
 
-const generateRoomCode = () => {
+const generateUniqueRoomCode = () => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-  return Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  let code;
+  do {
+    code = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+  } while (rooms[code]);
+  return code;
+};
+
+const drawUniqueCards = (count) => {
+  const shuffled = [...cards.whiteCards].sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
 };
 
 function startNewRound(code) {
@@ -61,7 +70,7 @@ function startNewRound(code) {
       io.to(p.id).emit('newRound', { black, whiteCards: [], judge: nextJudge.name });
       console.log(`📤 Sent new round to judge ${p.name}`);
     } else if (p.connected) {
-      const whiteCards = Array.from({ length: 5 }, () => cards.whiteCards[Math.floor(Math.random() * cards.whiteCards.length)]);
+      const whiteCards = drawUniqueCards(5);
       p.hand = whiteCards;
       room.roundSubmitters.push(p.id);
       io.to(p.id).emit('newRound', { black, whiteCards, judge: nextJudge.name });
@@ -69,14 +78,11 @@ function startNewRound(code) {
     }
   });
 
-  // ✅ INSERT THIS BLOCK HERE
   console.log(`Rejoining Players: ${room.rejoiningPlayers.join(', ')}`);
   room.rejoiningPlayers.forEach(playerName => {
     const rejoinPlayer = room.players.find(p => p.name === playerName);
     if (rejoinPlayer && rejoinPlayer.connected && rejoinPlayer.id !== room.judge) {
-      const whiteCards = Array.from({ length: 5 }, () =>
-        cards.whiteCards[Math.floor(Math.random() * cards.whiteCards.length)]
-      );
+      const whiteCards = drawUniqueCards(5);
       rejoinPlayer.hand = whiteCards;
       rejoinPlayer.submitted = false;
 
@@ -95,7 +101,6 @@ function startNewRound(code) {
   });
   room.rejoiningPlayers = [];
 
-  // ✅ FINAL ROUND START LOGS
   console.log(`✅ Round started in room ${code} with judge ${nextJudge.name}`);
   io.to(code).emit('statusMessage', `🧑‍⚖️ New round started. Judge is ${nextJudge.name}`);
 }
@@ -104,7 +109,7 @@ io.on('connection', (socket) => {
   console.log(`User connected: ${socket.id}`);
 
   socket.on('createRoom', ({ name, count, password }) => {
-    const roomCode = generateRoomCode();
+    const roomCode = generateUniqueRoomCode();
     rooms[roomCode] = {
       players: [{ id: socket.id, name, score: 0, connected: true, submitted: false }],
       password,
@@ -142,7 +147,7 @@ io.on('connection', (socket) => {
     io.to(socket.id).emit('roomJoined', { code, players: room.players });
     io.to(code).emit('updatePlayerList', room.players);
 
-    if (room.players.length === room.expectedCount) {
+    if (room.players.filter(p => p.connected).length === room.expectedCount && !room.roundActive) {
       io.to(code).emit('allowStart');
     }
   });
@@ -156,11 +161,9 @@ io.on('connection', (socket) => {
 
     console.log(`🔁 Rejoin request from: ${name} (${socket.id})`);
 
-    if (player.connected) {
-      console.log(`⚠️ Rejoin attempt ignored: ${name} is already connected`);
-      return;
+    if (player.id !== socket.id && player.connected) {
+      console.log(`♻️ Updating socket ID for ${name} on rejoin`);
     }
-
     player.id = socket.id;
     player.connected = true;
     player.submitted = false;
@@ -171,6 +174,7 @@ io.on('connection', (socket) => {
 
     const isJudge = player.id === room.judge;
 
+    // If no active round or judging in progress, hold them for next round
     if (!room.roundActive || room.judgingInProgress) {
       if (!room.rejoiningPlayers.includes(player.name)) {
         room.rejoiningPlayers.push(player.name);
@@ -182,29 +186,37 @@ io.on('connection', (socket) => {
 
     // Mid-round rejoin
     if (!isJudge) {
+      // Preserve or assign hand
       if (!player.hand || player.hand.length === 0) {
-        const whiteCards = Array.from({ length: 5 }, () =>
-          cards.whiteCards[Math.floor(Math.random() * cards.whiteCards.length)]
-        );
+        const whiteCards = drawUniqueCards(5);
         player.hand = whiteCards;
+        console.log(`🃏 ${player.name} rejoined mid-round and received new cards`);
+      } else {
+        console.log(`🎴 ${player.name} rejoined with existing hand`);
       }
 
-      if (!room.roundSubmitters.includes(player.id)) {
+      // Ensure they're counted for submissions
+      if (!room.roundSubmitters.includes(player.id) && player.submitted === false) {
         room.roundSubmitters.push(player.id);
+        console.log(`📈 ${player.name} re-added to roundSubmitters on rejoin`);
       }
 
+      // 🔁 Re-send round info and their cards
       socket.emit('newRound', {
         black: room.currentBlackCard,
         whiteCards: player.hand,
         judge: room.players.find(p => p.id === room.judge)?.name || ''
       });
+
       console.log(`🃏 ${player.name} rejoined mid-round with cards`);
     } else {
+      // Judge rejoin
       socket.emit('newRound', {
         black: room.currentBlackCard,
         whiteCards: [],
         judge: room.players.find(p => p.id === room.judge)?.name || ''
       });
+
       console.log(`🧑‍⚖️ Judge ${player.name} rejoined mid-round`);
       if (room.judgingInProgress) {
         socket.emit('revealSubmissions', room.submissions);
@@ -215,11 +227,15 @@ io.on('connection', (socket) => {
   socket.on('startGame', (code) => io.to(code).emit('gameStarted'));
   socket.on('startRound', (roomCode) => startNewRound(roomCode));
 
+  // --- Submit Card Handler ---
   socket.on('submitCard', ({ roomCode, card }) => {
     const room = rooms[roomCode];
     if (!room || !room.roundActive || room.judgingInProgress) return;
 
     const player = room.players.find(p => p.id === socket.id);
+    console.log(`[SUBMIT DEBUG] socket.id: ${socket.id}`);
+    console.log(`[SUBMIT DEBUG] player found:`, player?.name || 'None');
+
     if (!player || player.submitted || player.id === room.judge) return;
 
     player.submitted = true;
@@ -262,6 +278,13 @@ io.on('connection', (socket) => {
       if (!player) continue;
 
       player.connected = false;
+
+      const submitterIndex = room.roundSubmitters.indexOf(player.id);
+      if (submitterIndex !== -1) {
+        room.roundSubmitters.splice(submitterIndex, 1);
+        console.log(`📉 ${player.name} removed from roundSubmitters on disconnect`);
+      }
+
       io.to(code).emit('updatePlayerList', room.players);
 
       if (room.judge === socket.id && room.roundActive) {
@@ -282,11 +305,17 @@ io.on('connection', (socket) => {
 
   socket.on('stopGame', (roomCode) => {
     const room = rooms[roomCode];
-    if (!room || socket.id !== room.host) return;
-    io.to(roomCode).emit('gameOver', { winner: '⚠️ Game ended early by host' });
+    if (!room) return;
+
+    const leader = room.players.reduce((top, p) => p.score > top.score ? p : top, room.players[0]);
+    const winnerText = leader.score > 0
+      ? `${leader.name} (score: ${leader.score})`
+      : '⚠️ Game ended early with no winner';
+
+    io.to(roomCode).emit('gameOver', { winner: winnerText });
   });
+});
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
-  });
 })

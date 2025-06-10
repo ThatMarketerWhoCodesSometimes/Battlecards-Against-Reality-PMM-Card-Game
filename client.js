@@ -37,6 +37,12 @@ let isJudge = false;
 let currentJudgeName = '';
 let currentPlayerName = '';
 
+function showRoomCodeAnywhere(code) {
+  document.querySelectorAll('.roomCodeDisplay').forEach(el => {
+    el.innerText = `Room Code: ${code}`;
+  });
+}
+
 // Track socket ID
 socket.on('connect', () => {
   currentPlayerId = socket.id;
@@ -142,10 +148,8 @@ socket.on('roomRejoined', ({ code, players }) => {
   updatePlayerList(players);
   updateScoreboard(players);
 
-  if (isHost) {
-    startRoundBtn.classList.remove('hidden');
-    stopGameBtn.classList.remove('hidden');
-  }
+  stopGameBtn.classList.remove('hidden');
+  if (isHost) startRoundBtn.classList.remove('hidden');
 });
 
 socket.on('updatePlayerList', (players) => {
@@ -163,10 +167,8 @@ socket.on('gameStarted', () => {
   waitingRoom.classList.add('hidden');
   gameScreen.classList.remove('hidden');
   document.getElementById('scoreboard').classList.remove('hidden');
-  if (isHost) {
-    startRoundBtn.classList.remove('hidden');
-    stopGameBtn.classList.remove('hidden');
-  }
+  stopGameBtn.classList.remove('hidden');
+  if (isHost) startRoundBtn.classList.remove('hidden');
 });
 
 socket.on('newRound', ({ black, whiteCards, judge }) => {

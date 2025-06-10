@@ -7,6 +7,7 @@
   <title>Battlecards Against Reality</title>
   <link rel="stylesheet" href="style.css" />
 </head>
+
 <body>
   <img src="https://www.svgrepo.com/show/490958/cards.svg" alt="line art cards" style="position: fixed; top: 20px; right: 20px; width: 100px; opacity: 0.1;" />
   <h1>Battlecards Against Reality</h1>
@@ -60,10 +61,69 @@
 
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
+  <!-- Instructions Modal Trigger -->
+  <button id="instructionsBtn" style="margin-top: 1em; padding: 0.5em 1em; font-size: 1em;">How to Play</button>
+
+  <!-- Modal -->
+  <div id="instructionsModal" style="display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.7);">
+    <div style="background-color: white; color: black; margin: 10% auto; padding: 2em; border-radius: 8px; width: 90%; max-width: 600px;">
+      <h2 style="margin-top: 0;">🎉 Welcome, PMM!</h2>
+      <p>I'm Priyanka, a fellow PMM. I made this game because PMMs work hard. In the midst of using AI to create GTM apps, I thought — why not vibecode a multiplayer game to give you and your PMM friends a chance to relax, have fun, and bring our community even closer?</p>
+
+      <h3>🕹️ How to Play</h3>
+      <ol>
+        <li><strong>Choose a host.</strong></li>
+        <li><strong>Host creates a room</strong> by clicking <em>'Start Game'</em> and entering their name, number of players, and secret numerical passcode.</li>
+        <li><strong>Other players join</strong> by clicking <em>'Join Room'</em> and entering their name, room code, and passcode.</li>
+        <li><strong>When all players are in</strong>, the host will see an option to start the game and begin the first round.</li>
+        <li>If you drop off, don't worry! Simply click on <strong>Rejoin Game</strong>, you'll be let back in. (Unless you're the host, in which case, better to start a new game)</li>
+        <li>The game only allows a pre-determined number of players, so if anyone new joins you mid-game, it's recommended to start a new game.</li>
+      </ol>
+
+      <h3> Enjoy! </h3>
+
+      <button id="closeInstructions" style="
+        margin-top: 1em;
+        padding: 0.6em 1.2em;
+        background-color: #333;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: bold;
+        font-size: 1em;
+        cursor: pointer;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        transition: background-color 0.2s ease;
+      ">Got it!</button>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('instructionsModal');
+    const btn = document.getElementById('instructionsBtn');
+    const closeBtn = document.getElementById('closeInstructions');
+
+    btn.onclick = () => modal.style.display = 'block';
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+      if (event.target === modal) {
+        modal.style.display = 'none';
+      }
+    };
+  </script>
+
+
   <footer>
     <div style="max-width: 600px; margin: 40px auto 0; font-size: 12px; opacity: 0.6;">
       <p>
         This is a fan-made game inspired by <em>Cards Against Humanity</em>. All rights to the original game format belong to Cards Against Humanity LLC. This version was built for educational and personal portfolio purposes only.
+      </p>
+      
+      <p>
+        Facing bugs?
+        <a href="https://docs.google.com/forms/d/e/1FAIpQLSduGxlfCz_K2Sli5cxU0qZBUkXDybzUl50L2O0_qXiQ4TSXEg/viewform?usp=header" target="_blank" rel="noopener noreferrer">
+          Report it here
+        </a>!
       </p>
     </div>
   </footer>
